@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "gnotes++"
+version = "0.1.0"
+description = "Simple note taking app with GraphQL and Django"
+authors = ["siddhesh badnapurkar <Siddhesh.Badnapurkar@data-axle.com>"]
+license = "Boost Software License"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
