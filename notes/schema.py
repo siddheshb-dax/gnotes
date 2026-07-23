@@ -24,6 +24,9 @@ class Query(graphene.ObjectType):
         return Note.objects.all()
 
     def resolve_note(self, info, id):
-        return Note.objects.get(id=id)
+        try:
+            return Note.objects.get(pk=id)
+        except Note.DoesNotExist:
+            return None
 
 schema = graphene.Schema(query=Query)
