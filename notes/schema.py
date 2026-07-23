@@ -18,8 +18,12 @@ class NoteType(DjangoObjectType):
 
 class Query(graphene.ObjectType):
     notes = graphene.List(NoteType)
+    note = graphene.Field(NoteType, id=graphene.ID(required=True))
 
     def resolve_notes(self, info):
         return Note.objects.all()
+
+    def resolve_note(self, info, id):
+        return Note.objects.get(id=id)
 
 schema = graphene.Schema(query=Query)
