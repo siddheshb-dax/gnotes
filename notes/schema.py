@@ -13,7 +13,7 @@ class NoteType(DjangoObjectType):
             "title",
             "content",
             "created_at",
-            "udpated_at",
+            "updated_at",
         )
 
 class Query(graphene.ObjectType):
