@@ -16,10 +16,10 @@ Initially, the database role lacked the necessary permissions on the `public` 
 Grant privileges to the application user:
 
 ```sql
-postgres# GRANT ALL PRIVILEGES ON DATABASE note_db TO note_admin;
+postgres=> GRANT ALL PRIVILEGES ON DATABASE note_db TO note_admin;
 GRANT
-postgres# \c note_db
-note_db# GRANT ALL ON SCHEMA public TO note_admin;
+postgres=> \c note_db
+note_db=> GRANT ALL ON SCHEMA public TO note_admin;
 GRANT
 ```
 
