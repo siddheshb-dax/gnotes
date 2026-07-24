@@ -45,8 +45,28 @@ class CreateNote(graphene.Mutation):
 
         return CreateNote(note=note)
 
+class UpdateNote(graphene.Mutation):
+    class Arguments:
+        id = graphene.ID(required=True)
+        title = graphene.String(required=False)
+        content = graphene.String(required=False)
+
+    note = graphene.Field(NoteType)
+
+    @classmethod
+    def mutate(cls, root, info, id, title = '', content = ''):
+        note = Note.objects.get(pk=id)
+        if title:
+            note.title = title
+
+        if content:
+            note.content = content
+
+        return UpdateNote(note=note)
+    
 
 class Mutation(graphene.ObjectType):
     create_note = CreateNote.Field()
+    update_note = UpdateNote.Field()
 
 schema = graphene.Schema(query=Query)
