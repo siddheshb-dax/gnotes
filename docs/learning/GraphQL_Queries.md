@@ -55,3 +55,102 @@ In short,
 - `Note`: The Django ORM model representing a DB table.
 - `NoteType`: The GraphQL representation of `Note`. Graphene uses it to serialize and de-serialize the `Note` object. 
 - `resolve_notes()`: The resolver which fetches the data from the DB.
+
+
+---
+
+### Fetching a single `Note`
+---
+
+To fetch a single note, we need to create a GraphQL field for a single note. 
+
+```python
+note = graphene.Field(NoteType, id=graphene.ID(required=True))
+```
+
+This will promises the caller that a single note exists. A single note is then resolved as:
+
+```python
+def resolve_note(self, info, id):
+	try:
+		return Note.object.get(pk=id)
+	except Note.DoesNotExist:
+		return None
+```
+
+Since to fetch a single note, we will need to pass in the ID of the note, we add `id` as an argument in the resolver. Since, the note for a given ID may or may not exist, we use a safer way to fetch it and if it does not exist, we return `None`. 
+
+
+### GraphQL Queries
+---
+For the schema we defined, we run queries on: `localhost:8000/graphql`. 
+- To fetch all notes we use the `resolve_notes` resolver.
+
+```graphql
+query {
+	notes {
+		id
+		title
+		content
+	}
+}
+```
+
+This returns:
+
+```json
+{
+  "data": {
+    "notes": [
+      {
+        "id": "4",
+        "title": "Title 1",
+        "content": "This is the first note. Hope this updates."
+      },
+      {
+        "id": "5",
+        "title": "Title 2",
+        "content": "This is my second note. Hope it works!"
+      },
+      {
+        "id": "6",
+        "title": "Title 3",
+        "content": "This is my third note. This seems to work well!"
+      }
+    ]
+  }
+}
+```
+
+
+- To fetch a single note, we use the `resolve_note` resolver. 
+
+```graphql
+query {
+	note (id: 4) {
+		id
+		title
+		content
+		createdAt
+		updatedAt
+	}
+}
+```
+
+This results in:
+
+```json
+{
+  "data": {
+    "note": {
+      "id": "4",
+      "title": "Title 1",
+      "content": "This is the first note. Hope this updates.",
+      "createdAt": "2026-07-23T12:57:50.605433+00:00",
+      "updatedAt": "2026-07-23T18:24:05.728649+00:00"
+    }
+  }
+}
+```
+
+An interesting thing to notice is that we defined the fields in the `note.models.Note` as `created_at` and `updated_at`, i.e., in snake case, but here, we are using camelCase. This is done by Graphene (GraphQL requires the fields in queries to be in camelCase according to its standards). 
