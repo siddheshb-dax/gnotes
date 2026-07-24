@@ -47,26 +47,54 @@ class CreateNote(graphene.Mutation):
 
 class UpdateNote(graphene.Mutation):
     class Arguments:
-        id = graphene.ID(required=True)
+        id = graphene.ID(required=False)
         title = graphene.String(required=False)
         content = graphene.String(required=False)
 
     note = graphene.Field(NoteType)
 
     @classmethod
-    def mutate(cls, root, info, id, title = '', content = ''):
-        note = Note.objects.get(pk=id)
+    def mutate(cls, root, info, id = '', title = '', content = ''):
+        # Case 1 - ID given
+        if id:
+            note = Note.objects.get(pk=id)
+            if title is not None:
+                note.title = title
+
+            if content:
+                note.content = content
+
+        # Case 2: Title given
         if title:
+            note = Note.objects.get(title=title)
             note.title = title
 
-        if content:
-            note.content = content
+            if content:
+                note.content = content
 
+        note.save()
         return UpdateNote(note=note)
+
+class DeleteNote(graphene.Mutation):
+    class Arguments:
+        id = graphene.ID(required=True)
+
+    success = graphene.Boolean()
+
+    @classmethod
+    def mutate(cls, root, info, id):
+        try:
+            note = Note.objects.get(pk=id)
+        except Note.DoesNotExist:
+            return DeleteNote(success=False)
+
+        note.delete()
+        return DeleteNote(success=True)
     
 
 class Mutation(graphene.ObjectType):
     create_note = CreateNote.Field()
     update_note = UpdateNote.Field()
+    delete_note = DeleteNote.Field()
 
 schema = graphene.Schema(query=Query)
