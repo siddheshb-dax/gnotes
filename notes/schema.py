@@ -1,9 +1,17 @@
 import graphene
+from django.contrib.auth import get_user_model
 from graphene_django import DjangoObjectType # This tells Graphene that 'this is based on a Django model'
 
 from .models import Note
 
+class UserType(DjangoObjectType):
+    class Meta:
+        model = get_user_model()
+        fields = ("id", "username")
+
 class NoteType(DjangoObjectType):
+    owner = graphene.Field(UserType)
+
     class Meta:
         model = Note # This connects the object to the ORM
 
