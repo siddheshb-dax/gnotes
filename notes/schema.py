@@ -17,11 +17,27 @@ class NoteType(DjangoObjectType):
         )
 
 class Query(graphene.ObjectType):
-    notes = graphene.List(NoteType)
+    '''
+        The fields below contain the queryable fields 
+        which can be used to search for Note objects
+    '''
+    notes = graphene.List(
+        NoteType,
+        title=graphene.String(),
+        content=graphene.String()
+    )
+
     note = graphene.Field(NoteType, id=graphene.ID(required=True))
 
-    def resolve_notes(self, info):
-        return Note.objects.all()
+    def resolve_notes(self, info, title=None, content=None):
+        queryset = Note.objects.all()
+        if title:
+            queryset = queryset.filter(title__icontains=title)
+
+        if content:
+            queryset = queryset.filter(content__icontains=content)
+
+        return queryset
 
     def resolve_note(self, info, id):
         try:
