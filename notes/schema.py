@@ -1,8 +1,13 @@
 import graphene
 from django.contrib.auth import get_user_model
+from django.contrib.auth import authenticate, login as django_login
 from graphene_django import DjangoObjectType # This tells Graphene that 'this is based on a Django model'
 
 from .models import Note
+
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class UserType(DjangoObjectType):
     class Meta:
@@ -62,9 +67,13 @@ class CreateNote(graphene.Mutation):
 
     @classmethod
     def mutate(cls, root, info, title='', content=''):
+        if not info.context.user.is_authenticated:
+            raise Exception("User must be authenticated")
+
         note = Note.objects.create(
+            owner=info.context.user,
             title=title,
-            content=content,
+            content=content
         )
 
         return CreateNote(note=note)
@@ -79,23 +88,20 @@ class UpdateNote(graphene.Mutation):
 
     @classmethod
     def mutate(cls, root, info, id = '', title = '', content = ''):
-        # Case 1 - ID given
-        if id:
-            note = Note.objects.get(pk=id)
-            if title is not None:
-                note.title = title
+        if not info.context.user.is_authenticated:
+            raise Exception("User must be authenticated")
 
-            if content:
-                note.content = content
+        try:
+            note = Note.objects.get(pk=id, owner=info.context.user)
+        except Note.DoesNotExist:
+            return UpdateNote(note=None)
 
-        # Case 2: Title given
-        if title:
-            note = Note.objects.get(title=title)
+        if title is not None:
             note.title = title
 
-            if content:
-                note.content = content
-
+        if content is not None:
+            note.content = content
+        
         note.save()
         return UpdateNote(note=note)
 
@@ -107,18 +113,57 @@ class DeleteNote(graphene.Mutation):
 
     @classmethod
     def mutate(cls, root, info, id):
+        if not info.context.user.is_authenticated:
+            raise Exception("User must be authenticated")
+
         try:
-            note = Note.objects.get(pk=id)
+            note = Note.objects.get(pk=id, owner=info.context.user)
         except Note.DoesNotExist:
             return DeleteNote(success=False)
 
         note.delete()
         return DeleteNote(success=True)
-    
+
+class CreateUser(graphene.Mutation):
+    class Arguments:
+        username = graphene.String(required=True)
+        password = graphene.String(required=True)
+
+    user = graphene.Field(UserType)
+
+    @classmethod
+    def mutate(cls, root, info, username, password):
+        user = User.objects.create_user(
+            username=username,
+            password=password
+        )
+
+        return CreateUser(user=user)
+
+class LoginUser(graphene.Mutation):
+    class Arguments:
+        username = graphene.String(required=True)
+        password = graphene.String(required=True)
+
+    success = graphene.Boolean()
+    user = graphene.Field(UserType)
+
+    @classmethod 
+    def mutate(cls, root, info, username, password):
+        user = authenticate(request=info.context, username=username, password=password)
+
+        if user is None:
+            return LoginUser(success=False, user=None)
+
+        django_login(info.context, user)
+        return LoginUser(success=True, user=user)
 
 class Mutation(graphene.ObjectType):
     create_note = CreateNote.Field()
     update_note = UpdateNote.Field()
     delete_note = DeleteNote.Field()
 
-schema = graphene.Schema(query=Query)
+    create_user = CreateUser.Field()
+    login = LoginUser.Field()
+
+schema = graphene.Schema(query=Query, mutation=Mutation)
