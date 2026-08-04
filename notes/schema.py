@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate, login as django_login
 from graphene_django import DjangoObjectType # This tells Graphene that 'this is based on a Django model'
 
-from .models import Note
+from .models import Note, Activity
 
 from django.contrib.auth import get_user_model
 
@@ -76,6 +76,13 @@ class CreateNote(graphene.Mutation):
             content=content
         )
 
+        Activity.objects.create(
+            user=info.context.user,
+            action=Activity.Action.CREATE,
+            note=note,
+            note_title=note.title
+        )        
+
         return CreateNote(note=note)
 
 class UpdateNote(graphene.Mutation):
@@ -103,6 +110,14 @@ class UpdateNote(graphene.Mutation):
             note.content = content
         
         note.save()
+
+        Activity.objects.create(
+            user=info.context.user,
+            action=Activity.Action.UDPATE,
+            note=note,
+            note_title=note.title
+        )
+
         return UpdateNote(note=note)
 
 class DeleteNote(graphene.Mutation):
@@ -120,6 +135,13 @@ class DeleteNote(graphene.Mutation):
             note = Note.objects.get(pk=id, owner=info.context.user)
         except Note.DoesNotExist:
             return DeleteNote(success=False)
+
+        Activity.objects.create(
+            user=info.context.user,
+            action=Activity.Action.DELETE,
+            note=note,
+            note_title=note.title
+        )
 
         note.delete()
         return DeleteNote(success=True)
@@ -156,6 +178,12 @@ class LoginUser(graphene.Mutation):
             return LoginUser(success=False, user=None)
 
         django_login(info.context, user)
+
+        Activity.objects.create(
+            user=user,
+            action=Activity.Action.LOGIN,
+        )
+
         return LoginUser(success=True, user=user)
 
 class Mutation(graphene.ObjectType):
