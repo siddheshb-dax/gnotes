@@ -54,7 +54,7 @@ class Query(graphene.ObjectType):
 
     def resolve_note(self, info, id):
         try:
-            return Note.objects.get(pk=id)
+            return Note.objects.get(pk=id, owner=info.context.user)
         except Note.DoesNotExist:
             return None
 
