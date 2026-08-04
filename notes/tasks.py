@@ -6,7 +6,11 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-@shared_task
+@shared_task(
+    autoretry_for=(Exception, ),
+    retry_backoff=True,
+    max_retries=3,
+)
 def log_activity_task(user_id, action, note_id=None):
     user = User.objects.get(id=user_id)
     note = None
