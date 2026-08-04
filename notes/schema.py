@@ -11,6 +11,8 @@ User = get_user_model()
 
 from .tasks import log_activity_task
 
+from django.db import transaction
+
 class UserType(DjangoObjectType):
     class Meta:
         model = get_user_model()
@@ -78,10 +80,12 @@ class CreateNote(graphene.Mutation):
             content=content
         )     
 
-        log_activity_task.delay(
-            user_id=info.context.user.id,
-            action=Activity.Action.CREATE,
-            note_id=note.id,
+        transaction.on_commit(
+            lambda: log_activity_task.delay(
+                user_id=info.context.user.id,
+                action=Activity.Action.CREATE,
+                note_id=note.id,
+            )
         )
 
         return CreateNote(note=note)
@@ -112,10 +116,12 @@ class UpdateNote(graphene.Mutation):
         
         note.save()
 
-        log_activity_task.delay(
-            user_id=info.context.user.id,
-            action=Activity.Action.UPDATE,
-            note_id=note.id,
+        transaction.on_commit(
+            lambda: log_activity_task.delay(
+                user_id=info.context.user.id,
+                action=Activity.Action.UPDATE,
+                note_id=note.id,
+            )
         )
 
         return UpdateNote(note=note)
@@ -136,10 +142,12 @@ class DeleteNote(graphene.Mutation):
         except Note.DoesNotExist:
             return DeleteNote(success=False)
 
-        log_activity_task.delay(
-            user_id=info.context.user.id,
-            action=Activity.Action.DELETE,
-            note_id=note.id,
+        transaction.on_commit(
+            lambda: log_activity_task.delay(
+                user_id=info.context.user.id,
+                action=Activity.Action.DELETE,
+                note_id=note.id,
+            )
         )
 
         note.delete()
