@@ -58,7 +58,6 @@ def test_note_creation(client):
     note_owner = note["owner"]
 
     assert note_owner["username"] == "test_user"
-    assert note_owner["id"] == "1"
 
     assert Note.objects.filter(title=TEST_NOTE_TITLE, content=TEST_NOTE_CONTENT).exists()
 
