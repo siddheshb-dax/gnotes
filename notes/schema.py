@@ -9,6 +9,8 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+from .services import log
+
 class UserType(DjangoObjectType):
     class Meta:
         model = get_user_model()
@@ -74,14 +76,13 @@ class CreateNote(graphene.Mutation):
             owner=info.context.user,
             title=title,
             content=content
-        )
+        )     
 
-        Activity.objects.create(
+        log(
             user=info.context.user,
             action=Activity.Action.CREATE,
             note=note,
-            note_title=note.title
-        )        
+        )
 
         return CreateNote(note=note)
 
@@ -111,11 +112,10 @@ class UpdateNote(graphene.Mutation):
         
         note.save()
 
-        Activity.objects.create(
+        log(
             user=info.context.user,
             action=Activity.Action.UDPATE,
-            note=note,
-            note_title=note.title
+            note=note
         )
 
         return UpdateNote(note=note)
@@ -136,11 +136,10 @@ class DeleteNote(graphene.Mutation):
         except Note.DoesNotExist:
             return DeleteNote(success=False)
 
-        Activity.objects.create(
+        log(
             user=info.context.user,
             action=Activity.Action.DELETE,
             note=note,
-            note_title=note.title
         )
 
         note.delete()
