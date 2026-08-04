@@ -59,6 +59,8 @@ def test_list_all_notes(client):
 
     payload_user1 = user1_resp.json()
 
+    assert "errors" not in payload_user1
+
     notes_for_user1 = payload_user1["data"]["notes"]
     assert len(notes_for_user1) == USER_1_IT
 
@@ -86,10 +88,12 @@ def test_list_all_notes(client):
     assert user2_resp.status_code == 200
     payload_user2 = user2_resp.json()
 
+    assert "errors" not in payload_user2
+
     notes_for_user2 = payload_user2["data"]["notes"]
     assert len(notes_for_user2) == USER_2_IT
 
-    for i in range(USER_1_IT):
+    for i in range(USER_2_IT):
         assert notes_for_user2[i]["title"] == f"Title {i + 1} for user2"
         assert notes_for_user2[i]["content"] == f"Content {i + 1} for user2"
 
