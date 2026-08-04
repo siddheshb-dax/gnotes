@@ -43,7 +43,7 @@ class Query(graphene.ObjectType):
     note = graphene.Field(NoteType, id=graphene.ID(required=True))
 
     def resolve_notes(self, info, title=None, content=None):
-        queryset = Note.objects.all()
+        queryset = Note.objects.filter(owner=info.context.user)
         if title:
             queryset = queryset.filter(title__icontains=title)
 
