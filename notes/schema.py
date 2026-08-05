@@ -13,6 +13,10 @@ from .tasks import log_activity_task
 
 from django.db import transaction
 
+import csv
+from io import StringIO
+from graphene_file_upload.scalars import Upload
+
 class UserType(DjangoObjectType):
     class Meta:
         model = get_user_model()
@@ -193,6 +197,57 @@ class LoginUser(graphene.Mutation):
 
         return LoginUser(success=True, user=user)
 
+class ImportNotes(graphene.Mutation):
+    class Arguments:
+        file = Upload(required=True)
+
+    imported_count = graphene.Int()
+    skipped_count = graphene.Int()
+
+    @classmethod
+    def mutate(cls, root, info, file):
+        if not info.context.user.is_authenticated:
+            raise Exception("User must be authenticated")
+
+        text = file.read().decode("utf-8")
+        reader = csv.DictReader(StringIO(initial_value=text))
+
+        headers = [header.lower() for header in reader.fieldnames]
+        if headers != ["title", "content"]:
+            raise Exception("CSV must contain title, content as fieldnames")
+
+        imported = 0
+        skipped = 0
+
+        for row in reader:
+            title = row["title"].strip()
+            content = row["content"].strip()
+
+            if not content:
+                skipped += 1
+                continue
+
+            Note.objects.create(
+                title=title,
+                content=content,
+                owner=info.context.user
+            )
+
+            imported += 1
+
+        if imported:
+            transaction.on_commit(
+                lambda: log_activity_task.delay(
+                    user_id=info.context.user.id,
+                    action=Activity.Action.IMPORT
+                )
+            )
+
+        return ImportNotes(
+            imported_count=imported,
+            skipped_count=skipped
+        )
+
 class Mutation(graphene.ObjectType):
     create_note = CreateNote.Field()
     update_note = UpdateNote.Field()
@@ -200,5 +255,7 @@ class Mutation(graphene.ObjectType):
 
     create_user = CreateUser.Field()
     login = LoginUser.Field()
+
+    import_notes = ImportNotes.Field()
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
