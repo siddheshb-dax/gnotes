@@ -27,6 +27,7 @@ class Activity(models.Model):
         UDPATE = "UPDATE", "Update"
         DELETE = "DELETE", "Delete"
         LOGIN = "LOGIN", "Login"
+        IMPORT = "IMPORT", "Import"
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
