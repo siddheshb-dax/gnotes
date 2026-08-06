@@ -17,3 +17,6 @@ db.sqlite3
 
 # Redis
 *.rdb
+
+# PyTest
+.pytest_cache
